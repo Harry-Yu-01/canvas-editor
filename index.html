@@ -1,0 +1,118 @@
+<canvas id="canvas1" width="500" height="500">
+</canvas>
+<button id="button1">load img
+</button>
+<script>
+  const canvas1 = document.getElementById('canvas1')
+  const OPERATION_LAYER = 99999
+  const IMAGE_LAYER = 2
+  let layers = new Map();
+
+  const draw = () => {
+    const execDrawFunctions = (drawFunctions) => {
+      if (drawFunctions && drawFunctions.length) {
+        for (let drawFunc of drawFunctions) {
+          drawFunc(canvas1)
+        }
+      }
+    }
+    const clearCanvas = (canvas) => {
+      let context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    clearCanvas(canvas1)
+    let drawFunctions = layers.get(IMAGE_LAYER)
+    execDrawFunctions(drawFunctions)
+    drawFunctions = layers.get(OPERATION_LAYER)
+    execDrawFunctions(drawFunctions)
+  }
+
+  //获取鼠标指针坐标
+  function getMousePos(oContext, evt) {
+    var rect = canvas1.getBoundingClientRect();
+    return {
+      x: evt.clientX - rect.left,
+      y: evt.clientY - rect.top
+    };
+  }
+  let isDown = false;
+  let originX = 0;
+  let originY = 0;
+  canvas1.addEventListener("mousedown", function (evt) {
+    var mousePos = getMousePos(canvas1, evt);
+    var message = "down：" + mousePos.x + "," + mousePos.y;
+    originX = mousePos.x;
+    originY = mousePos.y;
+    isDown = true;
+    console.log(message);
+  }, false);
+  canvas1.addEventListener("mousemove", function (evt) {
+    if (isDown) {
+      var mousePos = getMousePos(canvas1, evt);
+      var message = "move: " + mousePos.x + "," + mousePos.y;
+      var canvas = document.getElementById('canvas1');
+      layers.set(OPERATION_LAYER, [(canvas) => {
+        if (canvas.getContext) {
+          var ctx = canvas.getContext('2d');
+          ctx.strokeStyle = "#000000";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(originX, originY, mousePos.x - originX, mousePos.y - originY);
+        }
+      }])
+      draw()
+      console.log(message);
+    }
+  })
+  canvas1.addEventListener("mouseup", function (evt) {
+    var mousePos = getMousePos(canvas1, evt);
+    var message = "up" + mousePos.x + "," + mousePos.y;
+    isDown = false;
+    console.log(message);
+  }, false);
+
+  let button1 = document.getElementById('button1')
+  let drawImg = (canvas, image) => {
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0);
+  }
+  let img = new Image();
+  img.src = 'https://img-b2b.gznb.com/b2c/111201111485976576.jpg';
+  button1.addEventListener('click', (e) => {
+    let inputFile = document.createElement('input')
+    inputFile.type = 'file'
+    inputFile.addEventListener('change', function (e) {
+      const file = inputFile.files[0]
+      const reader = new FileReader()
+      reader.onload = function (e) {
+        img.src = reader.result
+        layers.set(IMAGE_LAYER, [(canvas) => {
+          drawImg(canvas, img)
+        }])
+        draw()
+      }
+      reader.readAsDataURL(file)
+
+    })
+    inputFile.click()
+
+    layers.set(IMAGE_LAYER, [(canvas) => {
+      drawImg(canvas, img)
+    }])
+    draw()
+  })
+  document.oncontextmenu = () => { return false };
+
+</script>
+<style>
+  #canvas1 {
+    border: 1px solid black;
+    margin: 100px 100px;
+  }
+
+  body {
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+</style>
